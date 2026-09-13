@@ -536,6 +536,7 @@ class Zoneminder < Formula
       -DZM_PERL_INSTALL_PATH=#{libexec}/lib/perl5
       -DZM_PERL_SEARCH_PATH=#{opt_libexec}/lib/perl5
       -DOPENSSL_ROOT_DIR=#{formula_opt_prefix("openssl@3")}
+      -DZM_SCRIPT_PATH=/bin:/usr/bin:/usr/local/bin:#{HOMEBREW_PREFIX}/bin
       -DZM_WEB_USER=#{web_user}
       -DZM_WEB_GROUP=#{web_group}
       -DCMAKE_PREFIX_PATH=#{mysql.opt_prefix};#{HOMEBREW_PREFIX}
@@ -554,9 +555,26 @@ class Zoneminder < Formula
     # The Perl daemons run under -T and hardcode a taint-safe PATH of
     # /bin:/usr/bin:/usr/local/bin. Homebrew on Apple Silicon is /opt/homebrew,
     # which is not in that list, so they cannot find the database client that
-    # ZoneMinder::General#findDbCommand shells out to and zmupdate.pl dies with
-    # "sh: mysql: command not found". Upstream should make this configurable;
-    # until it is, append the Homebrew prefix.
+    # ZoneMinder::General#findDbCommand shells out to, and zmupdate.pl dies with
+    # "sh: mysql: command not found".
+    #
+    # ZM_SCRIPT_PATH above is the supported way to set this, but it only exists
+    # once ZoneMinder/zoneminder#5137 lands. Until then patch the installed
+    # scripts. This selects on the literal, so once the build substitutes the
+    # variable there is nothing left to match and the block quietly stops doing
+    # anything.
+    #
+    # On the security of adding it: the Homebrew prefix is group writable
+    # (0775, group admin) and perl's taint check permits that - it only refuses
+    # world writable directories - so this really does let anyone who can write
+    # there choose what the daemons run. Upstream declines to add such a
+    # directory automatically, and it is right not to. It is accepted here
+    # because the prefix is already the trust root for this install: Cellar
+    # itself is 0775, so the same people can rename the perl directory aside
+    # and replace the interpreter that runs every one of these scripts. The
+    # PATH entry grants nothing they do not already have. That reasoning holds
+    # for a stock Homebrew prefix, not for one whose group has been widened to
+    # share it between untrusted users - set ZM_SCRIPT_PATH yourself there.
     ["/bin:/usr/bin:/usr/local/bin", "/bin:/usr/bin"].each do |safe_path|
       targets = (Dir[bin/"*.pl"] + [libexec/"lib/perl5/ZoneMinder/Memory.pm"]).select do |f|
         File.file?(f) && File.read(f).include?("$ENV{PATH}  = '#{safe_path}';")
