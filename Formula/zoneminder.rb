@@ -158,10 +158,13 @@ class Zoneminder < Formula
         # -lzstd -lssl -lcrypto, but a Homebrew Perl carries no -L for the
         # Homebrew prefix, so its configure step fails with "Can't link/include
         # C library 'zstd', 'ssl', 'crypto', aborting".
+        # Each of these is one argument. %W would split them on whitespace and
+        # Makefile.PL would report "Unknown option: lmysqlclient".
         extra = if r.name == "DBD::MariaDB"
-          %W[
-            --libs=-L#{mysql.opt_lib} -L#{HOMEBREW_PREFIX}/lib -lmysqlclient -lz -lzstd -lssl -lcrypto -lresolv
-            --cflags=-I#{mysql.opt_include}/mysql
+          [
+            "--libs=-L#{mysql.opt_lib} -L#{HOMEBREW_PREFIX}/lib -lmysqlclient " \
+            "-lz -lzstd -lssl -lcrypto -lresolv",
+            "--cflags=-I#{mysql.opt_include}/mysql",
           ]
         else
           []
