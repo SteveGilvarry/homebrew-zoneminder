@@ -380,6 +380,19 @@ class Zoneminder < Formula
     mysql = Formula["mysql-client"]
     perl = Formula["perl"]
 
+    # Which account ZoneMinder runs as. Detection would pick _www, the account
+    # the system Apache uses, but Homebrew owns var and etc as whoever owns the
+    # prefix, and that is also who brew services runs jobs as. Left at _www the
+    # two disagree: the directories are unwritable, and zmpkg.pl tries to su and
+    # fails with "Unable to find valid su syntax" because that needs root.
+    #
+    # Derive it from the prefix so the two always agree. Anyone fronting this
+    # with the system Apache instead should set ZM_WEB_USER back to _www in
+    # zm.conf and chown var to match; the caveats say so.
+    prefix_stat = HOMEBREW_PREFIX.stat
+    web_user = Etc.getpwuid(prefix_stat.uid).name
+    web_group = Etc.getgrgid(prefix_stat.gid).name
+
     # So each resource can see the ones built before it - DBD::MariaDB needs DBI
     # at configure time. This does nothing for the installed scripts, which run
     # under -T and therefore ignore PERL5LIB; they get an explicit use lib from
@@ -523,6 +536,8 @@ class Zoneminder < Formula
       -DZM_PERL_INSTALL_PATH=#{libexec}/lib/perl5
       -DZM_PERL_SEARCH_PATH=#{opt_libexec}/lib/perl5
       -DOPENSSL_ROOT_DIR=#{formula_opt_prefix("openssl@3")}
+      -DZM_WEB_USER=#{web_user}
+      -DZM_WEB_GROUP=#{web_group}
       -DCMAKE_PREFIX_PATH=#{mysql.opt_prefix};#{HOMEBREW_PREFIX}
       -DCMAKE_C_FLAGS=-I#{mysql.opt_include}
       -DCMAKE_CXX_FLAGS=-I#{mysql.opt_include}
@@ -592,6 +607,19 @@ class Zoneminder < Formula
 
       2. A web server. Samples for Apache and nginx, with your paths already
          filled in, are at #{pkgshare}/misc.
+
+         ZoneMinder is configured to run as the account that owns the Homebrew
+         prefix, which is what owns var and what brew services runs jobs as. A
+         web server running as the same account - Homebrew's nginx or httpd -
+         needs nothing further. The system Apache at /usr/sbin/httpd runs as
+         _www instead, so for that, set ZM_WEB_USER and ZM_WEB_GROUP to _www in
+         #{etc}/zm/zm.conf and chown #{var}/run/zm, #{var}/log/zm,
+         #{var}/cache/zoneminder and #{var}/lib/zoneminder to match. zms reads
+         the mapped memory zmc writes, so both have to be the same account.
+
+         Live streaming needs one more piece. zms is a CGI binary, so nginx
+         cannot run it without a CGI wrapper such as fcgiwrap, which Homebrew
+         does not package; Apache runs it directly with mod_cgi.
 
       Then start it:
 
