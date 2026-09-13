@@ -65,12 +65,12 @@ class Zoneminder < Formula
 
     # Sample web server configuration, likewise generated and likewise guidance
     # rather than something to drop in unread.
-    (share/"zoneminder/misc").install \
+    (pkgshare/"misc").install \
       (buildpath/"build/misc/apache.conf"),
       (buildpath/"build/misc/nginx.conf")
   end
 
-  def post_install
+  def post_install_steps
     [
       var/"run/zm",
       var/"log/zm",
@@ -101,7 +101,7 @@ class Zoneminder < Formula
       2. A database:
 
            brew services start mariadb
-           mysql -u root < #{share}/zoneminder/db/zm_create.sql
+           mysql -u root < #{pkgshare}/db/zm_create.sql
            mysql -u root -e "CREATE USER IF NOT EXISTS 'zmuser'@localhost IDENTIFIED BY 'zmpass';"
            mysql -u root -e "GRANT LOCK TABLES, ALTER, SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX ON zm.* TO 'zmuser'@localhost;"
            zmupdate.pl --nointeractive
@@ -110,7 +110,7 @@ class Zoneminder < Formula
          this anywhere reachable.
 
       3. A web server. Samples for Apache and nginx, with your paths already
-         filled in, are at #{share}/zoneminder/misc.
+         filled in, are at #{pkgshare}/misc.
 
       Then start it:
 
