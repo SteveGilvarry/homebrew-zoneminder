@@ -386,10 +386,83 @@ class Zoneminder < Formula
     # ZM_PERL_SEARCH_PATH below.
     ENV.prepend_path "PERL5LIB", libexec/"lib/perl5"
 
-    # Module::Build left core in 5.22 and several of these ship only a Build.PL,
-    # so it has to be in place before the rest are built. Its own Build.PL
-    # bootstraps from the copy in the tarball.
-    ordered = resources.partition { |r| r.name == "Module::Build" }.flatten
+    # Resources are declared alphabetically but cannot be built that way: several
+    # are build-time prerequisites of others. Module::Build left core in 5.22 and
+    # some distributions ship only a Build.PL; File::ShareDir::Install is needed
+    # by Makefile.PL files further down the list. This is the order cpanm
+    # resolved, which is a valid topological one.
+    build_order = [
+      "PHP::Serialization",
+      "Email::Date::Format",
+      "MIME::Lite",
+      "MailTools",
+      "MIME::Tools",
+      "Test::Deep",
+      "Device::SerialPort",
+      "JSON::MaybeXS",
+      "Net::SFTP::Foreign",
+      "IO::Tty",
+      "Expect",
+      "Data::Dump",
+      "Module::Build",
+      "Class::Std",
+      "Class::Std::Fast",
+      "AppConfig",
+      "Template",
+      "Term::ReadKey",
+      "Module::Runtime",
+      "Module::Implementation",
+      "Params::SomeUtil",
+      "Data::OptList",
+      "Sub::Install",
+      "Dist::CheckConflicts",
+      "Package::Stash::XS",
+      "Class::Load",
+      "Package::Stash",
+      "File::ShareDir::Install",
+      "Class::Inspector",
+      "File::ShareDir",
+      "SOAP::WSDL",
+      "XML::Parser",
+      "IO::Interface",
+      "IO::Socket::Multicast",
+      "Sys::MemInfo",
+      "Data::UUID",
+      "Number::Bytes::Human",
+      "File::Slurp",
+      "Class::Mix",
+      "Params::Classify",
+      "Crypt::Eksblowfish",
+      "Crypt::URandom",
+      "Sub::Exporter::Progressive",
+      "B::Hooks::EndOfScope",
+      "Variable::Magic",
+      "namespace::autoclean",
+      "namespace::clean",
+      "Class::Singleton",
+      "XString",
+      "Role::Tiny",
+      "Devel::StackTrace",
+      "MRO::Compat",
+      "Clone::PP",
+      "Eval::Closure",
+      "Test::Fatal",
+      "Specio",
+      "Sub::Quote",
+      "Class::Data::Inheritable",
+      "Exception::Class",
+      "Params::ValidationCompiler",
+      "DateTime::TimeZone",
+      "DateTime::Locale",
+      "DateTime",
+      "Sub::Override",
+      "Devel::Deprecate",
+      "Crypt::Rijndael",
+      "Data::Float",
+      "Data::Entropy",
+      "Archive::Zip",
+    ]
+    ordered = resources.sort_by { |r| build_order.index(r.name) || build_order.size }
 
     ordered.each do |r|
       r.stage do
