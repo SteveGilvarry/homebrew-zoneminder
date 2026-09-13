@@ -386,6 +386,13 @@ class Zoneminder < Formula
     # ZM_PERL_SEARCH_PATH below.
     ENV.prepend_path "PERL5LIB", libexec/"lib/perl5"
 
+    # Take the default answer to every Makefile.PL prompt. Template-Toolkit asks
+    # about Template::Stash::XS and then waits on stdin, which there is none of
+    # inside a brew build - so without this the install hangs indefinitely
+    # rather than failing.
+    ENV["PERL_MM_USE_DEFAULT"] = "1"
+    ENV["PERL_MM_NONINTERACTIVE"] = "1"
+
     # Resources are declared alphabetically but cannot be built that way: several
     # are build-time prerequisites of others. Module::Build left core in 5.22 and
     # some distributions ship only a Build.PL; File::ShareDir::Install is needed
