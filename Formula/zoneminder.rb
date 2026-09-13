@@ -404,9 +404,16 @@ class Zoneminder < Formula
           []
         end
 
-        system perl.opt_bin/"perl", "Makefile.PL", "INSTALL_BASE=#{libexec}", *extra
-        system "make"
-        system "make", "install"
+        # Most of these are ExtUtils::MakeMaker, a few are Module::Build.
+        if (Pathname.pwd/"Makefile.PL").exist?
+          system perl.opt_bin/"perl", "Makefile.PL", "INSTALL_BASE=#{libexec}", *extra
+          system "make"
+          system "make", "install"
+        else
+          system perl.opt_bin/"perl", "Build.PL", "--install_base", libexec, *extra
+          system "./Build"
+          system "./Build", "install"
+        end
       end
     end
 
