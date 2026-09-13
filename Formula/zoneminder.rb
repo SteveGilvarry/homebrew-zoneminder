@@ -20,6 +20,9 @@ class Zoneminder < Formula
   depends_on "pcre2"
   depends_on "perl"
 
+  # ZoneMinder does not create these itself, and on Linux the distribution
+  # package is what does. Nothing would otherwise, and the daemons fail on
+  # first start without them.
   def install
     mysql = Formula["mysql-client"]
 
@@ -72,13 +75,11 @@ class Zoneminder < Formula
       (buildpath/"build/misc/nginx.conf")
   end
 
-  def post_install_steps
-    [
-      var/"run/zm",
-      var/"log/zm",
-      var/"cache/zoneminder/temp",
-      var/"lib/zoneminder/events",
-    ].each(&:mkpath)
+  post_install_steps do
+    mkdir_p "run/zm", base: :var
+    mkdir_p "log/zm", base: :var
+    mkdir_p "cache/zoneminder/temp", base: :var
+    mkdir_p "lib/zoneminder/events", base: :var
   end
 
   def caveats
