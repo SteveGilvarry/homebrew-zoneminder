@@ -386,7 +386,12 @@ class Zoneminder < Formula
     # ZM_PERL_SEARCH_PATH below.
     ENV.prepend_path "PERL5LIB", libexec/"lib/perl5"
 
-    resources.each do |r|
+    # Module::Build left core in 5.22 and several of these ship only a Build.PL,
+    # so it has to be in place before the rest are built. Its own Build.PL
+    # bootstraps from the copy in the tarball.
+    ordered = resources.partition { |r| r.name == "Module::Build" }.flatten
+
+    ordered.each do |r|
       r.stage do
         # DBD::MariaDB asks mysql_config for link flags and is handed
         # -lzstd -lssl -lcrypto, but a Homebrew Perl carries no -L for the
