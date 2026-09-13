@@ -147,9 +147,10 @@ class Zoneminder < Formula
     mysql = Formula["mysql-client"]
     perl = Formula["perl"]
 
-    # Same tree ZM_PERL_INSTALL_PATH points at, so the "use lib" line generated
-    # into each ZoneMinder script finds these too. use lib appends the
-    # architecture subdirectory by itself, which is where the XS modules land.
+    # So each resource can see the ones built before it - DBD::MariaDB needs DBI
+    # at configure time. This does nothing for the installed scripts, which run
+    # under -T and therefore ignore PERL5LIB; they get an explicit use lib from
+    # ZM_PERL_SEARCH_PATH below.
     ENV.prepend_path "PERL5LIB", libexec/"lib/perl5"
 
     resources.each do |r|
@@ -195,7 +196,7 @@ class Zoneminder < Formula
       -DZM_DIR_EVENTS=#{var}/lib/zoneminder/events
       -DPERL_EXECUTABLE=#{formula_opt_bin("perl")}/perl
       -DZM_PERL_INSTALL_PATH=#{libexec}/lib/perl5
-      -DZM_PERL_SEARCH_PATH=#{libexec}/lib/perl5
+      -DZM_PERL_SEARCH_PATH=#{opt_libexec}/lib/perl5
       -DOPENSSL_ROOT_DIR=#{formula_opt_prefix("openssl@3")}
       -DCMAKE_PREFIX_PATH=#{mysql.opt_prefix};#{HOMEBREW_PREFIX}
       -DCMAKE_C_FLAGS=-I#{mysql.opt_include}
